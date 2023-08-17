@@ -1,0 +1,7 @@
+syntax = "proto3";
+package pluto.pluto;
+
+option go_package = "pluto/x/pluto/types";
+
+// Msg defines the Msg service.
+service Msg {}

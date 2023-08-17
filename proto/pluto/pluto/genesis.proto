@@ -1,0 +1,12 @@
+syntax = "proto3";
+package pluto.pluto;
+
+import "gogoproto/gogo.proto";
+import "pluto/pluto/params.proto";
+
+option go_package = "pluto/x/pluto/types";
+
+// GenesisState defines the pluto module's genesis state.
+message GenesisState {
+  Params params = 1 [(gogoproto.nullable) = false];
+}

@@ -1,0 +1,12 @@
+syntax = "proto3";
+package pluto.pluto;
+
+import "gogoproto/gogo.proto";
+
+option go_package = "pluto/x/pluto/types";
+
+// Params defines the parameters for the module.
+message Params {
+  option (gogoproto.goproto_stringer) = false;
+  
+}
