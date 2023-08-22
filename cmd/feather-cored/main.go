@@ -7,7 +7,7 @@ import (
 	svrcmd "github.com/cosmos/cosmos-sdk/server/cmd"
 
 	"pluto/app"
-	"pluto/cmd/plutod/cmd"
+	"pluto/cmd/feather-cored/cmd"
 )
 
 func main() {

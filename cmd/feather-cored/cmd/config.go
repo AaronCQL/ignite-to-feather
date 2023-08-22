@@ -19,5 +19,7 @@ func initSDKConfig() {
 	config.SetBech32PrefixForAccount(app.AccountAddressPrefix, accountPubKeyPrefix)
 	config.SetBech32PrefixForValidator(validatorAddressPrefix, validatorPubKeyPrefix)
 	config.SetBech32PrefixForConsensusNode(consNodeAddressPrefix, consNodePubKeyPrefix)
+	config.SetCoinType(app.CoinType)     // Set coin type
+	sdk.DefaultBondDenom = app.BondDenom // Set default bond denom
 	config.Seal()
 }

@@ -56,12 +56,12 @@ func fauxMerkleModeOpt(bapp *baseapp.BaseApp) {
 	bapp.SetFauxMerkleMode()
 }
 
-// BenchmarkSimulation run the chain simulation
+// TestFullAppSimulation run the chain simulation
 // Running using starport command:
 // `starport chain simulate -v --numBlocks 200 --blockSize 50`
 // Running as go benchmark test:
-// `go test -benchmem -run=^$ -bench ^BenchmarkSimulation ./app -NumBlocks=200 -BlockSize 50 -Commit=true -Verbose=true -Enabled=true`
-func BenchmarkSimulation(b *testing.B) {
+// `go test -benchmem -run=^$ -bench ^TestFullAppSimulation ./app -NumBlocks=200 -BlockSize 50 -Commit=true -Verbose=true -Enabled=true`
+func TestFullAppSimulation(t *testing.T) {
 	simcli.FlagSeedValue = time.Now().Unix()
 	simcli.FlagVerboseValue = true
 	simcli.FlagCommitValue = true
@@ -76,11 +76,11 @@ func BenchmarkSimulation(b *testing.B) {
 		simcli.FlagVerboseValue,
 		simcli.FlagEnabledValue,
 	)
-	require.NoError(b, err, "simulation setup failed")
+	require.NoError(t, err, "simulation setup failed")
 
-	b.Cleanup(func() {
-		require.NoError(b, db.Close())
-		require.NoError(b, os.RemoveAll(dir))
+	t.Cleanup(func() {
+		require.NoError(t, db.Close())
+		require.NoError(t, os.RemoveAll(dir))
 	})
 
 	appOptions := make(simtestutil.AppOptionsMap, 0)
@@ -99,11 +99,11 @@ func BenchmarkSimulation(b *testing.B) {
 		appOptions,
 		baseapp.SetChainID(config.ChainID),
 	)
-	require.Equal(b, app.Name, bApp.Name())
+	require.Equal(t, app.Name, bApp.Name())
 
 	// run randomized simulation
 	_, simParams, simErr := simulation.SimulateFromSeed(
-		b,
+		t,
 		os.Stdout,
 		bApp.BaseApp,
 		simtestutil.AppStateFn(
@@ -120,8 +120,8 @@ func BenchmarkSimulation(b *testing.B) {
 
 	// export state and simParams before the simulation error is checked
 	err = simtestutil.CheckExportSimulation(bApp, config, simParams)
-	require.NoError(b, err)
-	require.NoError(b, simErr)
+	require.NoError(t, err)
+	require.NoError(t, simErr)
 
 	if config.Commit {
 		simtestutil.PrintStats(db)

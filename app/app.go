@@ -110,18 +110,23 @@ import (
 	ibctm "github.com/cosmos/ibc-go/v7/modules/light-clients/07-tendermint"
 	"github.com/spf13/cast"
 
+	cfg "pluto/config"
 	plutomodule "pluto/x/pluto"
 	plutomodulekeeper "pluto/x/pluto/keeper"
 	plutomoduletypes "pluto/x/pluto/types"
+
 	// this line is used by starport scaffolding # stargate/app/moduleImport
 
 	appparams "pluto/app/params"
 	"pluto/docs"
 )
 
-const (
-	AccountAddressPrefix = "cosmos"
-	Name                 = "pluto"
+// DO NOT change the names of these variables! They are populated by the `init` function.
+var (
+	AccountAddressPrefix string
+	Name                 string
+	BondDenom            string
+	CoinType             uint32
 )
 
 // this line is used by starport scaffolding # stargate/wasm/app/enabledProposals
@@ -197,6 +202,18 @@ var (
 )
 
 func init() {
+	// Load and use config from config.json
+	config, err := cfg.Load()
+	if err != nil {
+		panic(err)
+	}
+	Name = config.AppName
+	BondDenom = config.BondDenom
+	AccountAddressPrefix = config.AddressPrefix
+	// Feather chains' coin type should follow Terra's coin type.
+	// WARNING: changing this value will break feather's assumptions and functionalities.
+	CoinType = 330
+
 	userHomeDir, err := os.UserHomeDir()
 	if err != nil {
 		panic(err)
