@@ -1,52 +1,103 @@
-# pluto
-**pluto** is a blockchain built using Cosmos SDK and Tendermint and created with [Ignite CLI](https://ignite.com/cli).
+# Ignite to Feather
 
-## Get started
+This repository contains the minimal changes required to convert a chain scaffolded using [Ignite CLI](https://docs.ignite.com/) to conform to the [Feather Core](https://github.com/terra-money/feather-core) interface.
 
-```
-ignite chain serve
-```
+## Steps
 
-`serve` command installs dependencies, builds, initializes, and starts your blockchain in development.
+Please see [this commit](https://github.com/AaronCQL/ignite-to-feather/commit/e1b51387a382cd0ebd4e53e207956e916e5e818d) for a full example diff of the changes required.
 
-### Configure
+### 1. Rename the `cmd/<app>d` directory to `cmd/feather-cored`
 
-Your blockchain in development can be configured with `config.yml`. To learn more, see the [Ignite CLI docs](https://docs.ignite.com).
+This ensures that the `Makefile` that will be added later references the correct directory. If your IDE does not automatically update the import changes caused by step 1, you can fix it manually (remember to replace `<go_module>` with your project's Go module):
 
-### Web Frontend
-
-Ignite CLI has scaffolded a Vue.js-based web app in the `vue` directory. Run the following commands to install dependencies and start the app:
-
-```
-cd vue
-npm install
-npm run serve
+```go
+import (
+  // "<go_module>/cmd/<app>d/cmd"
+  "<go_module>/cmd/feather-cored/cmd"
+)
 ```
 
-The frontend app is built using the `@starport/vue` and `@starport/vuex` packages. For details, see the [monorepo for Ignite front-end development](https://github.com/ignite/web).
+### 2. Modify the `app/simulation_test.go` file
 
-## Release
-To release a new version of your blockchain, create and push a new tag with `v` prefix. A new draft release with the configured targets will be created.
+Rename the `BenchmarkSimulation` function to `TestFullAppSimulation`, and make sure it's taking in `testing.T` as args and not `testing.B`
 
+```go
+// OLD
+// func BenchmarkSimulation(b *testing.B) {
+//   ...
+// }
+
+// NEW
+func TestFullAppSimulation(t *testing.T) {
+  ...
+}
 ```
-git tag v0.1
-git push origin v0.1
+
+### 3. Copy the `config` directory of `feather-core`
+
+Copy the [`config` directory from `feather-core`](https://github.com/terra-money/feather-core/tree/main/config) into the root of your project. There should be exactly two files in the directory: `config.go` and `config.json`.
+
+### 4. Copy the `Makefile` of `feather-core`
+
+Copy the [`Makefile` from `feather-core`](https://github.com/terra-money/feather-core/blob/main/Makefile) into the root of your project. Though not essential, the `HTTPS_GIT` variable should be set to the correct GitHub URL of your project.
+
+**Warning**: this makefile should NOT be edited unless you know what you're doing.
+
+### 5. Copy the `contrib/devtools/Makefile` of `feather-core`
+
+Copy the [`contrib/devtools/Makefile` from `feather-core`](https://github.com/terra-money/feather-core/blob/main/contrib/devtools/Makefile) into the root of your project.
+
+**Warning**: this makefile should NOT be edited unless you know what you're doing.
+
+### 6. Modify the `app/app.go` file
+
+Firstly, declare new variables to be used as [ldflags during compile time](https://www.digitalocean.com/community/tutorials/using-ldflags-to-set-version-information-for-go-applications):
+
+```go
+// OLD
+// const (
+//   AccountAddressPrefix = "cosmos"
+//   Name                 = "pluto"
+// )
+
+// NEW
+// Note: 'const' is changed to 'var' and the values are no longer initialised.
+// DO NOT change the names and values of these variables! They are populated by the `init` function.
+var (
+  AccountAddressPrefix string
+  Name                 string
+  BondDenom            string
+  CoinType             uint32
+)
 ```
 
-After a draft release is created, make your final changes from the release page and publish it.
+Then, update the `init` function by loading configurations from `config/config.json` (note that the added code MUST be placed at the start of the `init` function):
 
-### Install
-To install the latest version of your blockchain node's binary, execute the following command on your machine:
+```go
+func init() {
+  // ADD THIS TO START OF FUNCTION
+  // Load and use config from config.json
+  config, err := cfg.Load()
+  if err != nil {
+   panic(err)
+  }
+  Name = config.AppName
+  BondDenom = config.BondDenom
+  AccountAddressPrefix = config.AddressPrefix
+  // Feather chains' coin type should follow Terra's coin type.
+  // WARNING: changing this value will break feather's assumptions and functionalities.
+  CoinType = 330
 
+  // REST OF ORIGINAL FUNCTION
+  ...
+}
 ```
-curl https://get.ignite.com/username/pluto@latest! | sudo bash
+
+### 7. Modify the `cmd/feather-cored/cmd/config.go` file
+
+Add two additional lines of configurations immediately before calling `config.Seal()`:
+
+```go
+config.SetCoinType(app.CoinType)     // Set coin type
+sdk.DefaultBondDenom = app.BondDenom // Set default bond denom
 ```
-`username/pluto` should match the `username` and `repo_name` of the Github repository to which the source code was pushed. Learn more about [the install process](https://github.com/allinbits/starport-installer).
-
-## Learn more
-
-- [Ignite CLI](https://ignite.com/cli)
-- [Tutorials](https://docs.ignite.com/guide)
-- [Ignite CLI docs](https://docs.ignite.com)
-- [Cosmos SDK docs](https://docs.cosmos.network)
-- [Developer Chat](https://discord.gg/ignite)
